@@ -37,15 +37,72 @@ var CmdReposList = cli.Command{
 	Usage:       "List available repositories",
 	Description: `List available repositories`,
 	Action:      runReposList,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "login, l",
+			Usage: "Indicate one login, optional when inside a gitea repository",
+		},
+		cli.StringFlag{
+			Name:  "mode",
+			Usage: "Indicate one login, optional when inside a gitea repository",
+		},
+		cli.StringFlag{
+			Name:  "org",
+			Usage: "Indicate one login, optional when inside a gitea repository",
+		},
+		cli.StringFlag{
+			Name:  "user",
+			Usage: "Indicate one login, optional when inside a gitea repository",
+		},
+	},
 }
 
+// runReposList list repositories
 func runReposList(ctx *cli.Context) error {
 	login := initCommandLoginOnly(ctx)
 
-	rps, err := login.Client().ListMyRepos()
+	mode := ctx.String("mode")
+	org := ctx.String("org")
+	user := ctx.String("user")
 
+	var rps []*gitea.Repository
+	var err error
+
+	if org != "" {
+		rps, err = login.Client().ListOrgRepos(org)
+	} else if user != "" {
+		rps, err = login.Client().ListUserRepos(user)
+	} else {
+		rps, err = login.Client().ListMyRepos()
+	}
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	var repos []*gitea.Repository
+	if mode == "" {
+		repos = rps
+	} else if mode == "fork" {
+		for _, rp := range rps {
+			if rp.Fork == true {
+				repos = append(repos, rp)
+			}
+		}
+	} else if mode == "mirror" {
+		for _, rp := range rps {
+			if rp.Mirror == true {
+				repos = append(repos, rp)
+			}
+		}
+	} else if mode == "source" {
+		for _, rp := range rps {
+			if rp.Mirror != true && rp.Fork != true {
+				repos = append(repos, rp)
+			}
+		}
+	} else {
+		fmt.Printf("Unknown mode '%s'\nUse one of the following:\n- fork\n- mirror\n- source\n", mode)
+		return nil
 	}
 
 	if len(rps) == 0 {
@@ -54,7 +111,7 @@ func runReposList(ctx *cli.Context) error {
 	}
 
 	fmt.Println("Name | Type/Mode | SSH-URL | Owner")
-	for _, rp := range rps {
+	for _, rp := range repos {
 		var mode = "source"
 		if rp.Fork {
 			mode = "fork"
