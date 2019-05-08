@@ -26,21 +26,7 @@ var CmdIssues = cli.Command{
 		CmdIssuesList,
 		CmdIssuesCreate,
 	},
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "login, l",
-			Usage: "Indicate one login, optional when inside a gitea repository",
-		},
-		cli.StringFlag{
-			Name:  "repo, r",
-			Usage: "Indicate one repository, optional when inside a gitea repository",
-		},
-		cli.StringFlag{
-			Name:        "output, o",
-			Usage:       "Specify output format. (table)",
-			Destination: &output,
-		},
-	},
+	Flags: append([]cli.Flag{}, RepoDefaultFlags...),
 }
 
 // CmdIssuesList represents a sub command of issues to list issues
@@ -59,7 +45,7 @@ func runIssues(ctx *cli.Context) error {
 }
 
 func runIssueDetail(ctx *cli.Context, index string) error {
-	login, owner, repo := initCommand(ctx)
+	login, owner, repo := initCommand()
 
 	if strings.HasPrefix(index, "#") {
 		index = index[1:]
@@ -85,7 +71,7 @@ func runIssueDetail(ctx *cli.Context, index string) error {
 }
 
 func runIssuesList(ctx *cli.Context) error {
-	login, owner, repo := initCommand(ctx)
+	login, owner, repo := initCommand()
 
 	issues, err := login.Client().ListRepoIssues(owner, repo, gitea.ListIssueOption{
 		Page:  0,
@@ -136,7 +122,7 @@ var CmdIssuesCreate = cli.Command{
 	Usage:       "Create an issue on repository",
 	Description: `Create an issue on repository`,
 	Action:      runIssuesCreate,
-	Flags: []cli.Flag{
+	Flags: append([]cli.Flag{
 		cli.StringFlag{
 			Name:  "title, t",
 			Usage: "issue title to create",
@@ -145,50 +131,11 @@ var CmdIssuesCreate = cli.Command{
 			Name:  "body, b",
 			Usage: "issue body to create",
 		},
-	},
-}
-
-func initCommand(ctx *cli.Context) (*Login, string, string) {
-	err := loadConfig(yamlConfigPath)
-	if err != nil {
-		log.Fatal("load config file failed", yamlConfigPath)
-	}
-
-	var login *Login
-	if loginFlag := getGlobalFlag(ctx, "login"); loginFlag == "" {
-		login, err = getActiveLogin()
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		login = getLoginByName(loginFlag)
-		if login == nil {
-			log.Fatal("indicated login name", loginFlag, "does not exist")
-		}
-	}
-
-	repoPath := getGlobalFlag(ctx, "repo")
-	if repoPath == "" {
-		login, repoPath, err = curGitRepoPath()
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	}
-
-	owner, repo := splitRepo(repoPath)
-	return login, owner, repo
-}
-
-func getGlobalFlag(ctx *cli.Context, flag string) string {
-	var val = ctx.String(flag)
-	if val == "" {
-		return ctx.GlobalString(flag)
-	}
-	return val
+	}, RepoDefaultFlags...),
 }
 
 func runIssuesCreate(ctx *cli.Context) error {
-	login, owner, repo := initCommand(ctx)
+	login, owner, repo := initCommand()
 
 	_, err := login.Client().CreateIssue(owner, repo, gitea.CreateIssueOption{
 		Title: ctx.String("title"),
