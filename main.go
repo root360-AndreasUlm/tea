@@ -39,6 +39,7 @@ func main() {
 		cmd.CmdIssues,
 		cmd.CmdPulls,
 		cmd.CmdReleases,
+		cmd.CmdRepos,
 	}
 	err := app.Run(os.Args)
 	if err != nil {
