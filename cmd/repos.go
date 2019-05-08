@@ -21,6 +21,7 @@ var CmdRepos = cli.Command{
 	Action:      runReposList,
 	Subcommands: []cli.Command{
 		CmdReposList,
+		CmdReposFork,
 	},
 	Flags: []cli.Flag{
 		cli.StringFlag{
@@ -120,6 +121,50 @@ func runReposList(ctx *cli.Context) error {
 		}
 		fmt.Printf("%s | %s | %s | %s\n", rp.FullName, mode, rp.SSHURL, rp.Owner.UserName)
 	}
+
+	return nil
+}
+
+// CmdReposFork represents a sub command of issues to list issues
+var CmdReposFork = cli.Command{
+	Name:        "fork",
+	Usage:       "fork repository",
+	Description: `fork repository`,
+	Action:      runReposFork,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "login, l",
+			Usage: "Indicate one login, optional when inside a gitea repository",
+		},
+		cli.StringFlag{
+			Name:  "repo, r",
+			Usage: "Indicate one repo, optional when inside a gitea repository",
+		},
+		cli.StringFlag{
+			Name:  "org",
+			Usage: "Organization to fork the repository for (optional, default = logged in user)",
+		},
+	},
+}
+
+func runReposFork(ctx *cli.Context) error {
+	login, owner, repo := initCommand(ctx)
+	forkOptions := gitea.CreateForkOption{}
+	if org := ctx.String("org"); org != "" {
+		forkOptions = gitea.CreateForkOption{
+			Organization: &org,
+		}
+	}
+
+	_, err := login.Client().CreateFork(owner, repo, forkOptions)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	user, _ := login.Client().GetMyUserInfo()
+
+	fmt.Printf("Forked '%s/%s' to '%s/%s'\n", owner, repo, user.UserName, repo)
 
 	return nil
 }
