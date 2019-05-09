@@ -76,18 +76,22 @@ var (
 )
 
 func init() {
-	homeDir, err := utils.Home()
-	if err != nil {
-		log.Fatal("Retrieve home dir failed")
-	}
+	if configValue != "" {
+		yamlConfigPath = configValue
+	} else {
+		homeDir, err := utils.Home()
+		if err != nil {
+			log.Fatal("Retrieve home dir failed")
+		}
 
-	dir := filepath.Join(homeDir, ".tea")
-	err = os.MkdirAll(dir, os.ModePerm)
-	if err != nil {
-		log.Fatal("Init tea config dir", dir, "failed")
-	}
+		dir := filepath.Join(homeDir, ".tea")
+		err = os.MkdirAll(dir, os.ModePerm)
+		if err != nil {
+			log.Fatal("Init tea config dir", dir, "failed")
+		}
 
-	yamlConfigPath = filepath.Join(dir, "tea.yml")
+		yamlConfigPath = filepath.Join(dir, "tea.yml")
+	}
 }
 
 func splitRepo(repoPath string) (string, string) {

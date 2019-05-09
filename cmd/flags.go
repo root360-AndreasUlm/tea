@@ -16,6 +16,7 @@ var (
 	loginValue  string
 	repoValue   string
 	outputValue string
+	configValue string
 )
 
 // LoginFlag provides flag to specify tea login profile
@@ -35,7 +36,14 @@ var RepoFlag = cli.StringFlag{
 // OutputFlag provides flag to specify output type
 var OutputFlag = cli.StringFlag{
 	Name:        "output, o",
-	Usage:       "Indicate one repository, optional when inside a gitea repository",
+	Usage:       "Specify output format. (csv, simple, table, tsv, yaml)",
+	Destination: &outputValue,
+}
+
+// ConfigFlag provides flag to specify output type
+var ConfigFlag = cli.StringFlag{
+	Name:        "config, c",
+	Usage:       "Specify tea.yml path",
 	Destination: &outputValue,
 }
 
@@ -44,6 +52,7 @@ var OutputFlag = cli.StringFlag{
 // subcommand to work around issue:
 // https://github.com/urfave/cli/issues/585
 var DefaultFlags = []cli.Flag{
+	ConfigFlag,
 	LoginFlag,
 	OutputFlag,
 }
