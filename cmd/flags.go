@@ -44,7 +44,7 @@ var OutputFlag = cli.StringFlag{
 var ConfigFlag = cli.StringFlag{
 	Name:        "config, c",
 	Usage:       "Specify tea.yml path",
-	Destination: &outputValue,
+	Destination: &configValue,
 }
 
 // DefaultFlags defines flags that should be available
@@ -69,7 +69,7 @@ var RepoDefaultFlags = append([]cli.Flag{
 func initCommand() (*Login, string, string) {
 	err := loadConfig(yamlConfigPath)
 	if err != nil {
-		log.Fatal("load config file failed", yamlConfigPath)
+		log.Fatal("load config file failed ", yamlConfigPath)
 	}
 
 	var login *Login
