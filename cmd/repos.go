@@ -23,12 +23,7 @@ var CmdRepos = cli.Command{
 		CmdReposList,
 		CmdReposFork,
 	},
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "login, l",
-			Usage: "Indicate one login, optional when inside a gitea repository",
-		},
-	},
+	Flags: append([]cli.Flag{}, DefaultFlags...),
 }
 
 // CmdReposList represents a sub command of issues to list issues
@@ -37,11 +32,7 @@ var CmdReposList = cli.Command{
 	Usage:       "List available repositories",
 	Description: `List available repositories`,
 	Action:      runReposList,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "login, l",
-			Usage: "Indicate one login, optional when inside a gitea repository",
-		},
+	Flags: append([]cli.Flag{
 		cli.StringFlag{
 			Name:  "mode",
 			Usage: "Indicate one login, optional when inside a gitea repository",
@@ -54,12 +45,12 @@ var CmdReposList = cli.Command{
 			Name:  "user",
 			Usage: "Indicate one login, optional when inside a gitea repository",
 		},
-	},
+	}, DefaultFlags...),
 }
 
 // runReposList list repositories
 func runReposList(ctx *cli.Context) error {
-	login := initCommandLoginOnly(ctx)
+	login := initCommandLoginOnly()
 
 	mode := ctx.String("mode")
 	org := ctx.String("org")
@@ -105,12 +96,19 @@ func runReposList(ctx *cli.Context) error {
 		return nil
 	}
 
-	if len(rps) == 0 {
-		fmt.Println("No repositories found")
-		return nil
+	headers := []string{
+		string("Name"),
+		string("Type/Mode"),
+		string("SSH-URL"),
+		string("Owner"),
 	}
 
-	fmt.Println("Name | Type/Mode | SSH-URL | Owner")
+	var values [][]string
+
+	if len(rps) == 0 {
+		Output(outputValue, headers, values)
+		return nil
+	}
 	for _, rp := range repos {
 		var mode = "source"
 		if rp.Fork {
@@ -119,8 +117,17 @@ func runReposList(ctx *cli.Context) error {
 		if rp.Mirror {
 			mode = "mirror"
 		}
-		fmt.Printf("%s | %s | %s | %s\n", rp.FullName, mode, rp.SSHURL, rp.Owner.UserName)
+		values = append(
+			values,
+			[]string{
+				rp.FullName,
+				mode,
+				rp.SSHURL,
+				rp.Owner.UserName,
+			},
+		)
 	}
+	Output(outputValue, headers, values)
 
 	return nil
 }
@@ -131,24 +138,16 @@ var CmdReposFork = cli.Command{
 	Usage:       "fork repository",
 	Description: `fork repository`,
 	Action:      runReposFork,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "login, l",
-			Usage: "Indicate one login, optional when inside a gitea repository",
-		},
-		cli.StringFlag{
-			Name:  "repo, r",
-			Usage: "Indicate one repo, optional when inside a gitea repository",
-		},
+	Flags: append([]cli.Flag{
 		cli.StringFlag{
 			Name:  "org",
 			Usage: "Organization to fork the repository for (optional, default = logged in user)",
 		},
-	},
+	}, RepoDefaultFlags...),
 }
 
 func runReposFork(ctx *cli.Context) error {
-	login, owner, repo := initCommand(ctx)
+	login, owner, repo := initCommand()
 	forkOptions := gitea.CreateForkOption{}
 	if org := ctx.String("org"); org != "" {
 		forkOptions = gitea.CreateForkOption{
@@ -169,22 +168,22 @@ func runReposFork(ctx *cli.Context) error {
 	return nil
 }
 
-func initCommandLoginOnly(ctx *cli.Context) *Login {
+func initCommandLoginOnly() *Login {
 	err := loadConfig(yamlConfigPath)
 	if err != nil {
 		log.Fatal("load config file failed", yamlConfigPath)
 	}
 
 	var login *Login
-	if loginFlag := getGlobalFlag(ctx, "login"); loginFlag == "" {
+	if loginValue == "" {
 		login, err = getActiveLogin()
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		login = getLoginByName(loginFlag)
+		login = getLoginByName(loginValue)
 		if login == nil {
-			log.Fatal("indicated login name", loginFlag, "does not exist")
+			log.Fatal("indicated login name ", loginValue, " does not exist")
 		}
 	}
 	return login

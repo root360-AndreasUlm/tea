@@ -92,7 +92,7 @@ func runIssuesList(ctx *cli.Context) error {
 	var values [][]string
 
 	if len(issues) == 0 {
-		Output(output, headers, values)
+		Output(outputValue, headers, values)
 		return nil
 	}
 
@@ -111,7 +111,7 @@ func runIssuesList(ctx *cli.Context) error {
 			},
 		)
 	}
-	Output(output, headers, values)
+	Output(outputValue, headers, values)
 
 	return nil
 }
